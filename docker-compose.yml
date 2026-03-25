@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Primary event store database
+  postgres:
+    image: postgres:16-alpine
+    container_name: eventsourcing-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: eventsourcing
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_password_dev
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=en_US.UTF-8 --lc-ctype=en_US.UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/Services/Command/EventSourcing.Command.Infrastructure/Database/Scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - eventsourcing-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d eventsourcing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis - Caching and session storage
+  redis:
+    image: redis:7-alpine
+    container_name: eventsourcing-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eventsourcing-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Azure Cosmos DB Emulator for local development
+  cosmosdb:
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    container_name: eventsourcing-cosmosdb
+    restart: unless-stopped
+    environment:
+      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 3
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: true
+      AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
+    ports:
+      - "8081:8081"
+      - "10251:10251"
+      - "10252:10252"
+      - "10253:10253"
+      - "10254:10254"
+    volumes:
+      - cosmosdb_data:/data/db
+    networks:
+      - eventsourcing-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f https://localhost:8081/_explorer/emulator.pem || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+  # Azurite - Local Azure Storage emulation (for Service Bus alternative in local dev)
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    container_name: eventsourcing-azurite
+    restart: unless-stopped
+    command: "azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck"
+    ports:
+      - "10000:10000"  # Blob service
+      - "10001:10001"  # Queue service
+      - "10002:10002"  # Table service
+    volumes:
+      - azurite_data:/data
+    networks:
+      - eventsourcing-network
+
+  # RabbitMQ - Alternative to Service Bus for local development
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: eventsourcing-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin_password_dev
+      RABBITMQ_DEFAULT_VHOST: eventsourcing
+    ports:
+      - "5672:5672"   # AMQP port
+      - "15672:15672" # Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - eventsourcing-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Seq - Structured logging server for development
+  seq:
+    image: datalust/seq:latest
+    container_name: eventsourcing-seq
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: Y
+      SEQ_FIRSTRUN_ADMINPASSWORDHASH: # Optional: set admin password
+    ports:
+      - "5341:80"     # Web UI
+    volumes:
+      - seq_data:/data
+    networks:
+      - eventsourcing-network
+
+  # Jaeger - Distributed tracing (optional for development)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: eventsourcing-jaeger
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+    ports:
+      - "14268:14268"   # HTTP collector
+      - "16686:16686"   # Web UI
+      - "6831:6831/udp" # UDP collector
+    networks:
+      - eventsourcing-network
+
+  # pgAdmin - PostgreSQL administration tool (optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: eventsourcing-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@eventsourcing.dev
+      PGADMIN_DEFAULT_PASSWORD: admin_password_dev
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - eventsourcing-network
+
+  # Redis Commander - Redis administration tool (optional)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: eventsourcing-redis-commander
+    restart: unless-stopped
+    environment:
+      REDIS_HOSTS: "local:redis:6379"
+    ports:
+      - "8082:8081"
+    depends_on:
+      - redis
+    networks:
+      - eventsourcing-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  cosmosdb_data:
+    driver: local
+  azurite_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  seq_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+networks:
+  eventsourcing-network:
+    driver: bridge
+    name: eventsourcing-network

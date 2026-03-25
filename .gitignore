@@ -1,0 +1,355 @@
+# Event Sourcing + CQRS Project .gitignore
+
+## .NET Core
+bin/
+obj/
+*.user
+*.suo
+*.cache
+.vs/
+.vscode/
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+TestResults/
+[Tt]est[Rr]esult*/
+*.VisualState.xml
+TestResult.xml
+*.coverage
+*.coveragexml
+*.ncrunchsolution
+*.ncrunchproject
+nCrunchTemp_*
+*.dotCover
+*.log
+*.svclog
+*.scc
+*.tmp_proj
+*.vspscc
+*.vssscc
+.builds
+*.dotCover
+*.tmp
+*.temp
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+## MSTest test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+## NUnit
+*.VisualState.xml
+TestResult.xml
+nunit-*.xml
+
+## .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## StyleCop
+StyleCopReport.xml
+
+## Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp_proj
+*.vcxproj*
+
+## Web publishing
+wwwroot/
+publish/
+PublishProfiles/
+*.Publish.xml
+*.pubxml
+*.publishproj
+
+## Microsoft Azure Web App publish settings
+*.azurePubxml
+*.PublishSettings
+
+## Microsoft Azure Build Output
+csx/
+*.build.csdef
+
+## Microsoft Azure Emulator
+ecf/
+rcf/
+
+## Windows Store app package directories and files
+AppPackages/
+BundleArtifacts/
+Package.StoreAssociation.xml
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.appxupload
+
+## Visual Studio cache/options directory
+.vs/
+
+## Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+!appsettings.json
+
+## Azure Functions
+local.settings.json
+.azure/
+
+## Node.js and React
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+dist/
+build/
+coverage/
+.nyc_output/
+.eslintcache
+.parcel-cache/
+.cache/
+
+## IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+## OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+## Docker
+.dockerignore
+Dockerfile.dockerignore
+
+## Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfplan
+*.tfvars
+!*.tfvars.example
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+*.DotSettings.user
+
+## Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+## TeamCity
+_TeamCity*
+
+## DotCover
+*.dotCover
+
+## NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+## MightyMoose
+*.mm.*
+AutoTest.Net/
+
+## Web workbench (sass)
+.sass-cache/
+
+## Installshield output folder
+[Ee]xpress/
+
+## DocProject
+DocProject/buildhelp/
+DocProject/Help/*.HxT
+DocProject/Help/*.HxC
+DocProject/Help/*.hhc
+DocProject/Help/*.hhk
+DocProject/Help/*.hhp
+DocProject/Help/Html2
+DocProject/Help/html
+
+## Click-Once directory
+publish/
+
+## Publish Web Output
+*.[Pp]ublish.xml
+*.azurePubxml
+
+## Windows Azure Build Output
+csx/
+*.build.csdef
+
+## Windows Store app package directory
+AppPackages/
+
+## Others
+ClientBin/
+~$*
+*~
+*.dbmdl
+*.dbproj.schemaview
+*.jfm
+*.pfx
+*.publishsettings
+orleans.codegen.cs
+
+## RIA/Silverlight projects
+Generated_Code/
+
+## Backup & report files from converting an old project file to a newer
+_UpgradeReport_Files/
+Backup*/
+UpgradeLog*.XML
+UpgradeLog*.htm
+ServiceFabricBackup/
+*.rptproj.bak
+
+## SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+## Business Intelligence projects
+*.rdl.data
+*.bim.layout
+*.bim_*.settings
+*.rptproj.rsuser
+
+## Microsoft Fakes
+FakesAssemblies/
+
+## GhostDoc plugin setting file
+*.GhostDoc.xml
+
+## Node.js Tools for Visual Studio
+.ntvs_analysis.dat
+node_modules/
+
+## Typescript v1 declaration files
+typings/
+
+## Visual Studio 6 build log
+*.plg
+
+## Visual Studio 6 workspace options file
+*.opt
+
+## Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
+*.vbw
+
+## Visual Studio LightSwitch build output
+**/*.HTMLClient/GeneratedArtifacts
+**/*.DesktopClient/GeneratedArtifacts
+**/*.DesktopClient/ModelManifest.xml
+**/*.Server/GeneratedArtifacts
+**/*.Server/ModelManifest.xml
+_Pvt_Extensions
+
+## Paket dependency manager
+.paket/paket.exe
+paket-files/
+
+## FAKE - F# Make
+.fake/
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## CodeRush
+.cr/
+
+## Python Tools for Visual Studio (PTVS)
+__pycache__/
+*.pyc
+
+## Cake - Uncomment if you are using it
+tools/**
+!tools/packages.config
+
+## Tabs Studio
+*.tss
+
+## Telerik's JustMock configuration file
+*.jmconfig
+
+## BizTalk build output
+*.btp.cs
+*.btm.cs
+*.odx.cs
+*.xsd.cs
+
+## OpenCover UI analysis results
+OpenCover/
+
+## Azure Stream Analytics local run output
+ASALocalRun/
+
+## MSBuild Binary and Structured Log
+*.binlog
+
+## NVidia Nsight GPU debugger configuration file
+*.nvuser
+
+## MFractors (Xamarin productivity tool) working folder
+.mfractor/
+
+## Event Sourcing specific
+*.db
+*.db-shm
+*.db-wal
+migration-backup/
+
+## packages folder
+packages/

@@ -1,0 +1,67 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+# Use: docker-compose -f docker-compose.yml -f docker-compose.override.yml up
+
+services:
+  postgres:
+    # Development-specific settings
+    environment:
+      POSTGRES_PASSWORD: dev_password_123  # Weaker password for dev
+    volumes:
+      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    # Enable logging for development
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cosmosdb:
+    # Development settings for Cosmos DB Emulator
+    environment:
+      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: true
+      # Disable SSL for easier local development
+      AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT: false
+
+  redis:
+    # Enable Redis modules for development
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+
+  rabbitmq:
+    # Development-specific RabbitMQ settings
+    environment:
+      RABBITMQ_DEFAULT_USER: dev
+      RABBITMQ_DEFAULT_PASS: dev_123
+      # Enable plugins for development
+      RABBITMQ_ENABLED_PLUGINS_FILE: /etc/rabbitmq/enabled_plugins
+    volumes:
+      - ./infra/docker/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./infra/docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+
+  # Add a development API gateway (Nginx) for routing
+  gateway:
+    image: nginx:alpine
+    container_name: eventsourcing-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./infra/docker/nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+    networks:
+      - eventsourcing-network
+
+  # Add Mailhog for email testing in development
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: eventsourcing-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - eventsourcing-network
