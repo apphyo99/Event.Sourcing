@@ -8,8 +8,6 @@ services:
     # Development-specific settings
     environment:
       POSTGRES_PASSWORD: dev_password_123  # Weaker password for dev
-    volumes:
-      - ./infra/docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     # Enable logging for development
     logging:
       driver: "json-file"
