@@ -20,9 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Services\Command\EventSourcing.Command.Infrastructure\EventSourcing.Command.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\Services\Query\EventSourcing.Query.Infrastructure\EventSourcing.Query.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Command\EventSourcing.Command.Infrastructure\EventSourcing.Command.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Query\EventSourcing.Query.Infrastructure\EventSourcing.Query.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\src\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

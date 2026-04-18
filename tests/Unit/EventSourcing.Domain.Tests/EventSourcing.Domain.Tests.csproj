@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Services\Command\EventSourcing.Command.Domain\EventSourcing.Command.Domain.csproj" />
-    <ProjectReference Include="..\..\src\BuildingBlocks\EventSourcing.BuildingBlocks.Domain\EventSourcing.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Command\EventSourcing.Command.Domain\EventSourcing.Command.Domain.csproj" />
+    <ProjectReference Include="..\..\..\src\BuildingBlocks\EventSourcing.BuildingBlocks.Domain\EventSourcing.BuildingBlocks.Domain.csproj" />
   </ItemGroup>
 
 </Project>

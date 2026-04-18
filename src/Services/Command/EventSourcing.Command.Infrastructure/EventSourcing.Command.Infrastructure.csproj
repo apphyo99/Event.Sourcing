@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\EventSourcing.Command.Application\EventSourcing.Command.Application.csproj" />
     <ProjectReference Include="..\EventSourcing.Command.Domain\EventSourcing.Command.Domain.csproj" />
   </ItemGroup>

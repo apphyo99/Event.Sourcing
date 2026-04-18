@@ -145,4 +145,12 @@ public class EventActor
     {
         return new EventActor(systemName, systemName, "System", context);
     }
+
+    /// <summary>
+    /// Creates a user actor (interactive principal)
+    /// </summary>
+    public static EventActor User(string userId, string? displayName = null, Dictionary<string, object>? context = null)
+    {
+        return new EventActor(userId, displayName, "User", context);
+    }
 }

@@ -13,8 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Application\EventSourcing.BuildingBlocks.Application.csproj" />
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Contracts\EventSourcing.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Application\EventSourcing.BuildingBlocks.Application.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Contracts\EventSourcing.BuildingBlocks.Contracts.csproj" />
     <ProjectReference Include="..\EventSourcing.Command.Domain\EventSourcing.Command.Domain.csproj" />
   </ItemGroup>
 

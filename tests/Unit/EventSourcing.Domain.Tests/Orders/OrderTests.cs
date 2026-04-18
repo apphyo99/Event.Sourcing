@@ -1,3 +1,4 @@
+using EventSourcing.BuildingBlocks.Domain.Aggregates;
 using EventSourcing.BuildingBlocks.Domain.Events;
 using EventSourcing.Command.Domain.Orders;
 using FluentAssertions;

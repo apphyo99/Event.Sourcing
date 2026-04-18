@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Domain\EventSourcing.BuildingBlocks.Domain.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Domain\EventSourcing.BuildingBlocks.Domain.csproj" />
   </ItemGroup>
 
 </Project>

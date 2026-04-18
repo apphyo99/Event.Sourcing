@@ -1,4 +1,5 @@
 using EventSourcing.BuildingBlocks.Domain.Aggregates;
+using EventSourcing.BuildingBlocks.Domain.Events;
 
 namespace EventSourcing.Command.Domain.Orders;
 

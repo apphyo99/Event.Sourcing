@@ -21,9 +21,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Services\Command\EventSourcing.Command.Api\EventSourcing.Command.Api.csproj" />
-    <ProjectReference Include="..\..\src\Services\Query\EventSourcing.Query.Api\EventSourcing.Query.Api.csproj" />
-    <ProjectReference Include="..\..\src\Services\Workers\EventSourcing.OutboxPublisher\EventSourcing.OutboxPublisher.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Command\EventSourcing.Command.Api\EventSourcing.Command.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Query\EventSourcing.Query.Api\EventSourcing.Query.Api.csproj" />
+    <ProjectReference Include="..\..\..\src\Services\Workers\EventSourcing.OutboxPublisher\EventSourcing.OutboxPublisher.csproj" />
   </ItemGroup>
 
 </Project>

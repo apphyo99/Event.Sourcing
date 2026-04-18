@@ -19,8 +19,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Contracts\EventSourcing.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Contracts\EventSourcing.BuildingBlocks.Contracts.csproj" />
   </ItemGroup>
 
 </Project>

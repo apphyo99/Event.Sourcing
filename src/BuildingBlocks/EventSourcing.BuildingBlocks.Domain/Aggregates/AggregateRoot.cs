@@ -1,3 +1,4 @@
+using EventSourcing.BuildingBlocks.Domain.Abstractions;
 using EventSourcing.BuildingBlocks.Domain.Events;
 
 namespace EventSourcing.BuildingBlocks.Domain.Aggregates;
