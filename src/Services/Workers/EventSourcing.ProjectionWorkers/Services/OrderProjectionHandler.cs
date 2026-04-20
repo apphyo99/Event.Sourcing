@@ -9,6 +9,12 @@ namespace EventSourcing.ProjectionWorkers.Services;
 /// </summary>
 public class OrderProjectionHandler : IProjectionHandler
 {
+    private const string OrderCreatedEventType = "OrderCreated";
+    private const string OrderItemAddedEventType = "OrderItemAdded";
+    private const string OrderConfirmedEventType = "OrderConfirmed";
+    private const string OrderShippedEventType = "OrderShipped";
+    private const string OrderCancelledEventType = "OrderCancelled";
+
     private readonly IReadModelRepositoryFactory _repositoryFactory;
     private readonly ILogger<OrderProjectionHandler> _logger;
 
@@ -38,19 +44,19 @@ public class OrderProjectionHandler : IProjectionHandler
             // Route to specific handler based on event type
             switch (domainEvent.GetType().Name)
             {
-                case "OrderCreated":
+                case OrderCreatedEventType:
                     await HandleOrderCreatedAsync(domainEvent, cancellationToken);
                     break;
-                case "OrderItemAdded":
+                case OrderItemAddedEventType:
                     await HandleOrderItemAddedAsync(domainEvent, cancellationToken);
                     break;
-                case "OrderConfirmed":
+                case OrderConfirmedEventType:
                     await HandleOrderConfirmedAsync(domainEvent, cancellationToken);
                     break;
-                case "OrderShipped":
+                case OrderShippedEventType:
                     await HandleOrderShippedAsync(domainEvent, cancellationToken);
                     break;
-                case "OrderCancelled":
+                case OrderCancelledEventType:
                     await HandleOrderCancelledAsync(domainEvent, cancellationToken);
                     break;
                 default:
@@ -73,12 +79,14 @@ public class OrderProjectionHandler : IProjectionHandler
 
     private async Task HandleOrderCreatedAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
     {
+        var customerId = ExtractRequiredProperty(domainEvent, "CustomerId");
+
         // Create order summary read model
         var orderSummary = new OrderSummaryReadModel
         {
             Id = domainEvent.StreamId,
             OrderId = domainEvent.StreamId,
-            CustomerId = ExtractProperty(domainEvent, "CustomerId"),
+            CustomerId = customerId,
             Status = "Draft",
             TotalAmount = 0m,
             CreatedAt = domainEvent.OccurredAt,
@@ -143,12 +151,24 @@ public class OrderProjectionHandler : IProjectionHandler
         }
     }
 
+    private static string ExtractRequiredProperty(DomainEvent domainEvent, string propertyName)
+    {
+        var value = ExtractProperty(domainEvent, propertyName);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new InvalidOperationException(
+                $"Event {domainEvent.GetType().Name} is missing required property '{propertyName}'.");
+        }
+
+        return value.Trim();
+    }
+
     private static string ExtractProperty(DomainEvent domainEvent, string propertyName)
     {
-        // In a real implementation, you would use proper reflection or serialization
-        // to extract properties from the domain event
-        // For now, this is a placeholder that would need proper implementation
-        var property = domainEvent.GetType().GetProperty(propertyName);
+        var properties = domainEvent.GetType().GetProperties();
+        var property = properties.FirstOrDefault(
+            p => string.Equals(p.Name, propertyName, StringComparison.OrdinalIgnoreCase));
+
         return property?.GetValue(domainEvent)?.ToString() ?? string.Empty;
     }
 }

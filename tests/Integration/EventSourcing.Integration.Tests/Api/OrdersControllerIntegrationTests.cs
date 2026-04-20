@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -13,37 +12,13 @@ namespace EventSourcing.Integration.Tests.Api;
 /// <summary>
 /// Integration tests for the Command API using TestContainers
 /// </summary>
-public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIntegrationTests.TestWebApplicationFactory>, IAsyncLifetime
+public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIntegrationTests.TestWebApplicationFactory>
 {
-    private readonly TestWebApplicationFactory _factory;
     private readonly HttpClient _client;
-    private readonly PostgreSqlContainer _postgresContainer;
 
     public OrdersControllerIntegrationTests(TestWebApplicationFactory factory)
     {
-        _factory = factory;
-        _postgresContainer = new PostgreSqlBuilder()
-            .WithImage("postgres:15")
-            .WithDatabase("eventsourcing_test")
-            .WithUsername("postgres")
-            .WithPassword("postgres")
-            .Build();
-
-        _client = _factory.CreateClient();
-    }
-
-    public async Task InitializeAsync()
-    {
-        // Start the PostgreSQL container
-        await _postgresContainer.StartAsync();
-
-        // Update the factory with the container connection string
-        _factory.SetConnectionString(_postgresContainer.GetConnectionString());
-    }
-
-    public async Task DisposeAsync()
-    {
-        await _postgresContainer.DisposeAsync();
+        _client = factory.CreateClient();
     }
 
     [Fact]
@@ -56,7 +31,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/orders", request);
+        var response = await _client.PostAsJsonAsync("/api/v1.0/orders", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -82,10 +57,50 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/api/v1/orders", request);
+        var response = await _client.PostAsJsonAsync("/api/v1.0/orders", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateOrder_ShouldReturnBadRequest_WhenCustomerIdIsWhitespace()
+    {
+        // Arrange
+        var request = new CreateOrderRequest
+        {
+            CustomerId = "   "
+        };
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/v1.0/orders", request);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task CreateOrder_ShouldReturnUnauthorized_WhenAuthenticationIsMissing()
+    {
+        // Arrange
+        var request = new CreateOrderRequest
+        {
+            CustomerId = "customer-123"
+        };
+        _client.DefaultRequestHeaders.Add("X-Test-Auth", "unauthenticated");
+
+        try
+        {
+            // Act
+            var response = await _client.PostAsJsonAsync("/api/v1.0/orders", request);
+
+            // Assert
+            response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+        finally
+        {
+            _client.DefaultRequestHeaders.Remove("X-Test-Auth");
+        }
     }
 
     [Fact]
@@ -97,7 +112,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
             CustomerId = "customer-123"
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/v1/orders", createRequest);
+        var createResponse = await _client.PostAsJsonAsync("/api/v1.0/orders", createRequest);
         createResponse.Should().BeSuccessful();
 
         var createContent = await createResponse.Content.ReadAsStringAsync();
@@ -117,7 +132,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/items", addItemRequest);
+        var response = await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/items", addItemRequest);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -137,7 +152,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/items", request);
+        var response = await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/items", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -157,7 +172,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
             CustomerId = "customer-123"
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/v1/orders", createRequest);
+        var createResponse = await _client.PostAsJsonAsync("/api/v1.0/orders", createRequest);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createResult = JsonSerializer.Deserialize<CreateOrderResponse>(createContent, new JsonSerializerOptions
         {
@@ -175,7 +190,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/items", request);
+        var response = await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/items", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -188,7 +203,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         var orderId = await CreateOrderWithItemAsync();
 
         // Act
-        var response = await _client.PostAsync($"/api/v1/orders/{orderId}/confirm", null);
+        var response = await _client.PostAsync($"/api/v1.0/orders/{orderId}/confirm", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -203,7 +218,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
             CustomerId = "customer-123"
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/v1/orders", createRequest);
+        var createResponse = await _client.PostAsJsonAsync("/api/v1.0/orders", createRequest);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createResult = JsonSerializer.Deserialize<CreateOrderResponse>(createContent, new JsonSerializerOptions
         {
@@ -213,7 +228,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         var orderId = createResult!.OrderId;
 
         // Act
-        var response = await _client.PostAsync($"/api/v1/orders/{orderId}/confirm", null);
+        var response = await _client.PostAsync($"/api/v1.0/orders/{orderId}/confirm", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -231,7 +246,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/cancel", request);
+        var response = await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/cancel", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -251,7 +266,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/cancel", request);
+        var response = await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/cancel", request);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -284,7 +299,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
             CustomerId = "customer-123"
         };
 
-        var createResponse = await _client.PostAsJsonAsync("/api/v1/orders", createRequest);
+        var createResponse = await _client.PostAsJsonAsync("/api/v1.0/orders", createRequest);
         var createContent = await createResponse.Content.ReadAsStringAsync();
         var createResult = JsonSerializer.Deserialize<CreateOrderResponse>(createContent, new JsonSerializerOptions
         {
@@ -302,7 +317,7 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
             Quantity = 1
         };
 
-        await _client.PostAsJsonAsync($"/api/v1/orders/{orderId}/items", addItemRequest);
+        await _client.PostAsJsonAsync($"/api/v1.0/orders/{orderId}/items", addItemRequest);
 
         return orderId;
     }
@@ -311,33 +326,33 @@ public class OrdersControllerIntegrationTests : IClassFixture<OrdersControllerIn
 
     #region Test Factory
 
-    public class TestWebApplicationFactory : WebApplicationFactory<Program>
+    public class TestWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
     {
-        private string? _connectionString;
+        private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder()
+            .WithImage("postgres:15")
+            .WithDatabase("eventsourcing_test")
+            .WithUsername("postgres")
+            .WithPassword("postgres")
+            .Build();
 
-        public void SetConnectionString(string connectionString)
+        public async Task InitializeAsync()
         {
-            _connectionString = connectionString;
+            await _postgresContainer.StartAsync();
+        }
+
+        async Task IAsyncLifetime.DisposeAsync()
+        {
+            await _postgresContainer.DisposeAsync();
+            await DisposeAsync();
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.ConfigureServices(services =>
-            {
-                // Override configuration with test connection string
-                if (!string.IsNullOrEmpty(_connectionString))
-                {
-                    // In a real implementation, you would properly override the connection string
-                    // For demo purposes, this shows the pattern
-                }
-
-                // Add test-specific services
-                services.AddAuthentication("Test")
-                    .AddScheme<TestAuthenticationSchemeOptions, TestAuthenticationHandler>(
-                        "Test", options => { });
-            });
-
             builder.UseEnvironment("Testing");
+
+            builder.UseSetting(
+                "ConnectionStrings:PostgreSQL",
+                _postgresContainer.GetConnectionString());
         }
     }
 

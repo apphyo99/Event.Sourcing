@@ -11,7 +11,7 @@ public class CreateOrderCommandValidator : AbstractValidator<CreateOrderCommand>
     public CreateOrderCommandValidator()
     {
         RuleFor(x => x.CustomerId)
-            .NotEmpty()
+            .Must(customerId => !string.IsNullOrWhiteSpace(customerId))
             .WithMessage("Customer ID is required");
 
         RuleFor(x => x.CorrelationId)

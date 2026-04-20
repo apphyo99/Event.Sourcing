@@ -39,7 +39,7 @@ public class OrdersController : BaseController
         {
             var command = new CreateOrderCommand
             {
-                CustomerId = request.CustomerId,
+                CustomerId = request.CustomerId?.Trim() ?? string.Empty,
                 CorrelationId = CorrelationId,
                 UserId = UserId ?? "anonymous",
                 UserName = UserName ?? "Anonymous User"
@@ -53,7 +53,7 @@ public class OrdersController : BaseController
                 return Ok(response);
             }
 
-            return HandleResult(result);
+            return HandleFailureFromStringResult<CreateOrderResponse>(result);
         }
         catch (Exception ex)
         {
