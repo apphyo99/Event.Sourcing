@@ -1,19 +1,19 @@
 using EventSourcing.BuildingBlocks.Infrastructure.Extensions;
 using EventSourcing.OutboxPublisher.Services;
-using Serilog;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Configure Serilog
-builder.Host.UseSerilog((context, configuration) =>
+builder.Services.AddSerilog((services, lc) =>
 {
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
+    lc.ReadFrom.Configuration(builder.Configuration)
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Service", "EventSourcing.OutboxPublisher")
         .WriteTo.Console()
-        .WriteTo.File("logs/outbox-publisher-.log", rollingInterval: RollingInterval.Day);
+        .WriteTo.File(
+            path: "logs/outbox-publisher-.log",
+            rollingInterval: RollingInterval.Day);
 });
 
 // Add infrastructure building blocks

@@ -17,11 +17,20 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" />
+    <PackageReference Include="AspNetCore.HealthChecks.UI.Client" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.File" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Domain\EventSourcing.BuildingBlocks.Domain.csproj" />
     <ProjectReference Include="..\EventSourcing.Command.Application\EventSourcing.Command.Application.csproj" />
     <ProjectReference Include="..\EventSourcing.Command.Infrastructure\EventSourcing.Command.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="EventSourcing.Integration.Tests" />
   </ItemGroup>
 
 </Project>

@@ -6,15 +6,15 @@ using Serilog;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-// Configure Serilog
-builder.Host.UseSerilog((context, configuration) =>
+builder.Services.AddSerilog((services, lc) =>
 {
-    configuration
-        .ReadFrom.Configuration(context.Configuration)
+    lc.ReadFrom.Configuration(builder.Configuration)
         .Enrich.FromLogContext()
         .Enrich.WithProperty("Service", "EventSourcing.ProjectionWorkers")
         .WriteTo.Console()
-        .WriteTo.File("logs/projection-workers-.log", rollingInterval: RollingInterval.Day);
+        .WriteTo.File(
+            path: "logs/projection-workers-.log",
+            rollingInterval: RollingInterval.Day);
 });
 
 // Add infrastructure building blocks
@@ -22,7 +22,7 @@ builder.Services.AddCosmosDbReadModels(builder.Configuration);
 builder.Services.AddServiceBusMessaging(builder.Configuration);
 
 // Configure Service Bus client for receiving messages
-builder.Services.AddSingleton<ServiceBusClient>(provider =>
+builder.Services.AddSingleton<ServiceBusClient>(_ =>
 {
     var connectionString = builder.Configuration.GetConnectionString("ServiceBus");
     if (string.IsNullOrWhiteSpace(connectionString))
@@ -43,7 +43,7 @@ builder.Services.AddHostedService<ProjectionWorkerService>();
 
 // Add health checks
 builder.Services.AddHealthChecks()
-    .AddCosmosDb(builder.Configuration.GetConnectionString("CosmosDB")!, name: "cosmosdb")
+    .AddAzureCosmosDB(name: "cosmosdb")
     .AddCheck("projection-workers", () => HealthCheckResult.Healthy(), tags: new[] { "ready" });
 
 var host = builder.Build();

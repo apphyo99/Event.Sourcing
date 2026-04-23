@@ -1,6 +1,8 @@
+using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using EventSourcing.BuildingBlocks.Application.Common;
+using EventSourcing.BuildingBlocks.Domain.Aggregates;
 
 namespace EventSourcing.Command.Api.Controllers;
 
@@ -86,6 +88,21 @@ public abstract class BaseController : ControllerBase
     }
 
     /// <summary>
+    /// Maps a failed string-valued command result to an HTTP error while preserving the declared API response type.
+    /// </summary>
+    protected ActionResult<TResponse> HandleFailureFromStringResult<TResponse>(Result<string> result)
+    {
+        Logger.LogWarning("Request failed with error: {Error}", result.Error);
+
+        return result.Errors.Any() switch
+        {
+            true when result.Errors.Count == 1 => BadRequest(new { error = result.Error, details = result.Errors }),
+            true => BadRequest(new { error = "Validation failed", details = result.Errors }),
+            false => BadRequest(new { error = result.Error })
+        };
+    }
+
+    /// <summary>
     /// Handles exceptions and converts them to appropriate HTTP responses
     /// </summary>
     /// <param name="ex">The exception to handle</param>
@@ -96,6 +113,12 @@ public abstract class BaseController : ControllerBase
 
         return ex switch
         {
+            ValidationException validationEx => BadRequest(new
+            {
+                error = "Validation failed",
+                details = validationEx.Errors.Select(e => new { e.PropertyName, e.ErrorMessage })
+            }),
+            DomainException domainEx => BadRequest(new { error = domainEx.Message }),
             ArgumentException argEx => BadRequest(new { error = argEx.Message }),
             InvalidOperationException opEx => Conflict(new { error = opEx.Message }),
             UnauthorizedAccessException => Unauthorized(new { error = "Access denied" }),

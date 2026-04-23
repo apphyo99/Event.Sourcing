@@ -9,10 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Azure.Messaging.ServiceBus" />
     <PackageReference Include="Microsoft.Azure.Cosmos" />
     <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="AspNetCore.HealthChecks.CosmosDb" />
     <PackageReference Include="Polly" />
@@ -21,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Infrastructure\EventSourcing.BuildingBlocks.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\EventSourcing.BuildingBlocks.Contracts\EventSourcing.BuildingBlocks.Contracts.csproj" />
+    <ProjectReference Include="..\..\Command\EventSourcing.Command.Domain\EventSourcing.Command.Domain.csproj" />
   </ItemGroup>
 
 </Project>

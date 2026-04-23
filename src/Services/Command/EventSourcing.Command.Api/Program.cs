@@ -1,8 +1,13 @@
 using EventSourcing.BuildingBlocks.Application.Extensions;
 using EventSourcing.BuildingBlocks.Infrastructure.Extensions;
 using EventSourcing.Command.Application.Extensions;
+using EventSourcing.Command.Application.Orders.Commands;
+using EventSourcing.Command.Api.Authentication.Testing;
 using EventSourcing.Command.Infrastructure.Extensions;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Reflection;
@@ -24,7 +29,9 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddControllers();
 
 // Add application and infrastructure building blocks
-builder.Services.AddApplicationBuildingBlocks(Assembly.GetExecutingAssembly());
+builder.Services.AddApplicationBuildingBlocks(
+    Assembly.GetExecutingAssembly(),
+    typeof(CreateOrderCommand).Assembly);
 builder.Services.AddInfrastructureBuildingBlocks(builder.Configuration);
 
 // Add command-specific application and infrastructure services
@@ -32,24 +39,35 @@ builder.Services.AddCommandApplication();
 builder.Services.AddCommandInfrastructure(builder.Configuration);
 
 // Configure authentication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+if (builder.Environment.IsEnvironment("Testing"))
+{
+    builder.Services.AddAuthentication(options =>
     {
-        options.Authority = builder.Configuration["Authentication:Authority"];
-        options.Audience = builder.Configuration["Authentication:Audience"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-    });
+        options.DefaultAuthenticateScheme = "Test";
+        options.DefaultChallengeScheme = "Test";
+    }).AddScheme<TestAuthenticationSchemeOptions, TestAuthenticationHandler>("Test", _ => { });
+}
+else
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = builder.Configuration["Authentication:Authority"];
+            options.Audience = builder.Configuration["Authentication:Audience"];
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        });
+}
 
 builder.Services.AddAuthorization();
 
 // Configure API versioning
 builder.Services.AddApiVersioning(options =>
 {
-    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+    options.DefaultApiVersion = new ApiVersion(1, 0);
     options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ApiVersionReader = Microsoft.AspNetCore.Mvc.ApiVersionReader.Combine(
-        new Microsoft.AspNetCore.Mvc.QueryStringApiVersionReader("version"),
-        new Microsoft.AspNetCore.Mvc.HeaderApiVersionReader("X-Version"));
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new QueryStringApiVersionReader("version"),
+        new HeaderApiVersionReader("X-Version"));
 });
 
 // Configure Swagger/OpenAPI
@@ -103,9 +121,14 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Configure health checks
-builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("PostgreSQL")!, name: "postgresql")
-    .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
+var healthChecks = builder.Services.AddHealthChecks();
+var postgresConnection = builder.Configuration.GetConnectionString("PostgreSQL");
+if (!string.IsNullOrWhiteSpace(postgresConnection))
+{
+    healthChecks.AddNpgSql(postgresConnection, name: "postgresql");
+}
+
+healthChecks.AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
 // Configure CORS
 builder.Services.AddCors(options =>
@@ -156,7 +179,7 @@ app.MapControllers();
 // Configure health check endpoints
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    ResponseWriter = Microsoft.Extensions.Diagnostics.HealthChecks.UIResponseWriter.WriteHealthCheckUIResponse
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
@@ -169,8 +192,8 @@ app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthC
     Predicate = _ => false
 });
 
-// Ensure database is created on startup in development
-if (app.Environment.IsDevelopment())
+// Ensure database is created on startup (development and automated integration tests)
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     try
     {
@@ -186,3 +209,8 @@ if (app.Environment.IsDevelopment())
 app.Logger.LogInformation("Event Sourcing Command API starting...");
 
 app.Run();
+
+/// <summary>
+/// Public entry-point type for WebApplicationFactory-based integration tests.
+/// </summary>
+public partial class Program;

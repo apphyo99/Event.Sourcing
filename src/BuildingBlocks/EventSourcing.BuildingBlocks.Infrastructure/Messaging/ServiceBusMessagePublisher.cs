@@ -98,11 +98,12 @@ public class ServiceBusMessagePublisher : IMessagePublisher, IAsyncDisposable
             .WaitAndRetryAsync(
                 retryCount: _configuration.MaxRetryAttempts,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + _configuration.RetryDelay,
-                onRetry: (outcome, timespan, retryCount, context) =>
+                onRetry: (exception, timespan, retryCount, context) =>
                 {
                     _logger.LogWarning(
-                        "Retry {RetryCount}/{MaxRetries} for message publishing after {Delay}ms. Exception: {Exception}",
-                        retryCount, _configuration.MaxRetryAttempts, timespan.TotalMilliseconds, outcome.Exception?.Message);
+                        exception,
+                        "Retry {RetryCount}/{MaxRetries} for message publishing after {Delay}ms.",
+                        retryCount, _configuration.MaxRetryAttempts, timespan.TotalMilliseconds);
                 });
     }
 

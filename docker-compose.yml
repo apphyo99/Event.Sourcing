@@ -43,28 +43,23 @@ services:
 
   # Azure Cosmos DB Emulator for local development
   cosmosdb:
-    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:latest
+    image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
     container_name: eventsourcing-cosmosdb
     restart: unless-stopped
-    environment:
-      AZURE_COSMOS_EMULATOR_PARTITION_COUNT: 3
-      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: true
-      AZURE_COSMOS_EMULATOR_IP_ADDRESS_OVERRIDE: 127.0.0.1
+    mem_limit: 3g
     ports:
       - "8081:8081"
-      - "10251:10251"
-      - "10252:10252"
-      - "10253:10253"
-      - "10254:10254"
+      - "1234:1234"
     volumes:
-      - cosmosdb_data:/data/db
+      - cosmosdb_data:/tmp/cosmos/appdata
     networks:
       - eventsourcing-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -f https://localhost:8081/_explorer/emulator.pem || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8081/ || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 10
+      timeout: 15s
+      retries: 15
+      start_period: 120s
 
   # Azurite - Local Azure Storage emulation (for Service Bus alternative in local dev)
   azurite:
@@ -110,7 +105,8 @@ services:
     restart: unless-stopped
     environment:
       ACCEPT_EULA: Y
-      SEQ_FIRSTRUN_ADMINPASSWORDHASH: # Optional: set admin password
+      # Dev-only: Seq latest requires auth config on first run; disable auth for local stacks
+      SEQ_FIRSTRUN_NOAUTHENTICATION: "true"
     ports:
       - "5341:80"     # Web UI
     volumes:

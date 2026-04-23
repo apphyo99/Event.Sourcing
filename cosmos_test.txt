@@ -1,0 +1,31 @@
+{
+  "_self": "",
+  "id": "cosmosdev",
+  "_rid": "cosmosdev",
+  "media": "//media/",
+  "addresses": "//addresses/",
+  "_dbs": "//dbs/",
+  "enableMultipleWriteLocations": false,
+  "writableLocations": [
+    {
+      "name": "Primary",
+      "databaseAccountEndpoint": "http://127.0.0.1:8081/"
+    }
+  ],
+  "readableLocations": [
+    {
+      "name": "Primary",
+      "databaseAccountEndpoint": "http://127.0.0.1:8081/"
+    }
+  ],
+  "userConsistencyPolicy": {
+    "defaultConsistencyLevel": "Eventual"
+  },
+  "queryEngineConfiguration": "{\"sqlAllowSubQuery\":true,\"sqlAllowTop\":true,\"sqlAllowGroupByClause\":true,\"sqlAllowLike\":true,\"sqlAllowScalarSubQuery\":true,\"sqlAllowAggregateFunctions\":true,\"maxSpatialQueryCells\":2147483647,\"maxLogicalOrPerSqlQuery\":2147483647,\"maxLogicalAndPerSqlQuery\":2147483647,\"maxInExpressionItemsCount\":2147483647,\"enableSpatialIndexing\":true,\"sqlDisableOptimizationFlags\":0,\"sqlAllowNonFiniteNumbers\":false,\"spatialMaxGeometryPointCount\":256,\"queryMaxInMemorySortDocumentCount\":-500,\"maxUdfRefPerSqlQuery\":10,\"maxSqlQueryInputLength\":524288,\"maxQueryRequestTimeoutFraction\":0.9,\"maxJoinsPerSqlQuery\":10,\"allowNewKeywords\":true}"
+}---HTTP_EXIT:0---
+---HTTPS_EXIT:35---
+2026-03-28 09:53:39: PostgreSQL=OK, Gateway=OK, Explorer=OK
+2026-03-28 09:53:44: PostgreSQL=OK, Gateway=OK, Explorer=OK
+2026-03-28 09:53:49: PostgreSQL=OK, Gateway=OK, Explorer=OK
+2026-03-28 09:53:54: PostgreSQL=OK, Gateway=OK, Explorer=OK
+2026-03-28 09:53:59: PostgreSQL=OK, Gateway=OK, Explorer=OK

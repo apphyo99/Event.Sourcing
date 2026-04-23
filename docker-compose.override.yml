@@ -16,11 +16,8 @@ services:
         max-file: "3"
 
   cosmosdb:
-    # Development settings for Cosmos DB Emulator
-    environment:
-      AZURE_COSMOS_EMULATOR_ENABLE_DATA_PERSISTENCE: true
-      # Disable SSL for easier local development
-      AZURE_COSMOS_EMULATOR_ENABLE_MONGODB_ENDPOINT: false
+    # Development settings for Cosmos DB Emulator (vnext-preview)
+    # Uses HTTPS by default; no extra env vars needed
 
   redis:
     # Enable Redis modules for development

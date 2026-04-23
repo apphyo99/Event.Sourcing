@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS outbox_messages (
     retry_count INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     published_at TIMESTAMPTZ NULL,
+    last_error TEXT NULL,
     CONSTRAINT fk_outbox_event FOREIGN KEY (event_id) REFERENCES event_store (event_id) ON DELETE CASCADE
 );
 

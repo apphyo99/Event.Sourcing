@@ -2,7 +2,6 @@ using EventSourcing.BuildingBlocks.Application.Outbox;
 using EventSourcing.BuildingBlocks.Infrastructure.Messaging;
 using Microsoft.Extensions.Options;
 using Polly;
-using Polly.Extensions.Http;
 
 namespace EventSourcing.OutboxPublisher.Services;
 
@@ -67,11 +66,12 @@ public class OutboxPublisherService : BackgroundService
             .WaitAndRetryAsync(
                 retryCount: _options.MaxRetryAttempts,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + _options.RetryDelay,
-                onRetry: (outcome, timespan, retryCount, context) =>
+                onRetry: (exception, timespan, retryCount, context) =>
                 {
                     _logger.LogWarning(
-                        "Retry {RetryCount}/{MaxRetries} for outbox message publishing after {Delay}ms. Exception: {Exception}",
-                        retryCount, _options.MaxRetryAttempts, timespan.TotalMilliseconds, outcome.Exception?.Message);
+                        exception,
+                        "Retry {RetryCount}/{MaxRetries} for outbox message publishing after {Delay}ms.",
+                        retryCount, _options.MaxRetryAttempts, timespan.TotalMilliseconds);
                 });
     }
 

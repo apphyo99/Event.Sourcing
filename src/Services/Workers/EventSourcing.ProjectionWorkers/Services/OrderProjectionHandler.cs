@@ -1,6 +1,7 @@
 using EventSourcing.BuildingBlocks.Application.Projections;
 using EventSourcing.BuildingBlocks.Domain.Events;
 using EventSourcing.BuildingBlocks.Infrastructure.ReadModels;
+using EventSourcing.Command.Domain.Orders;
 
 namespace EventSourcing.ProjectionWorkers.Services;
 
@@ -9,12 +10,6 @@ namespace EventSourcing.ProjectionWorkers.Services;
 /// </summary>
 public class OrderProjectionHandler : IProjectionHandler
 {
-    private const string OrderCreatedEventType = "OrderCreated";
-    private const string OrderItemAddedEventType = "OrderItemAdded";
-    private const string OrderConfirmedEventType = "OrderConfirmed";
-    private const string OrderShippedEventType = "OrderShipped";
-    private const string OrderCancelledEventType = "OrderCancelled";
-
     private readonly IReadModelRepositoryFactory _repositoryFactory;
     private readonly ILogger<OrderProjectionHandler> _logger;
 
@@ -26,12 +21,15 @@ public class OrderProjectionHandler : IProjectionHandler
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public IEnumerable<Type> HandledEventTypes => new[]
-    {
-        // Note: In a real implementation, these types would be properly referenced
-        // For now, this demonstrates the pattern
-        typeof(DomainEvent) // Placeholder - would be actual event types like OrderCreated, OrderConfirmed, etc.
-    };
+    /// <inheritdoc />
+    public IEnumerable<Type> HandledEventTypes =>
+    [
+        typeof(OrderCreated),
+        typeof(OrderItemAdded),
+        typeof(OrderConfirmed),
+        typeof(OrderShipped),
+        typeof(OrderCancelled)
+    ];
 
     public async Task HandleAsync(DomainEvent domainEvent, CancellationToken cancellationToken = default)
     {
@@ -41,23 +39,22 @@ public class OrderProjectionHandler : IProjectionHandler
                 "Processing projection for event {EventType} with ID {EventId}",
                 domainEvent.GetType().Name, domainEvent.EventId);
 
-            // Route to specific handler based on event type
-            switch (domainEvent.GetType().Name)
+            switch (domainEvent)
             {
-                case OrderCreatedEventType:
-                    await HandleOrderCreatedAsync(domainEvent, cancellationToken);
+                case OrderCreated created:
+                    await HandleOrderCreatedAsync(created, cancellationToken);
                     break;
-                case OrderItemAddedEventType:
-                    await HandleOrderItemAddedAsync(domainEvent, cancellationToken);
+                case OrderItemAdded added:
+                    await HandleOrderItemAddedAsync(added, cancellationToken);
                     break;
-                case OrderConfirmedEventType:
-                    await HandleOrderConfirmedAsync(domainEvent, cancellationToken);
+                case OrderConfirmed confirmed:
+                    await HandleOrderConfirmedAsync(confirmed, cancellationToken);
                     break;
-                case OrderShippedEventType:
-                    await HandleOrderShippedAsync(domainEvent, cancellationToken);
+                case OrderShipped shipped:
+                    await HandleOrderShippedAsync(shipped, cancellationToken);
                     break;
-                case OrderCancelledEventType:
-                    await HandleOrderCancelledAsync(domainEvent, cancellationToken);
+                case OrderCancelled cancelled:
+                    await HandleOrderCancelledAsync(cancelled, cancellationToken);
                     break;
                 default:
                     _logger.LogDebug("No specific handler for event type {EventType}", domainEvent.GetType().Name);
@@ -77,19 +74,16 @@ public class OrderProjectionHandler : IProjectionHandler
         }
     }
 
-    private async Task HandleOrderCreatedAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
+    private async Task HandleOrderCreatedAsync(OrderCreated e, CancellationToken cancellationToken)
     {
-        var customerId = ExtractRequiredProperty(domainEvent, "CustomerId");
-
-        // Create order summary read model
         var orderSummary = new OrderSummaryReadModel
         {
-            Id = domainEvent.StreamId,
-            OrderId = domainEvent.StreamId,
-            CustomerId = customerId,
+            Id = e.StreamId,
+            OrderId = e.StreamId,
+            CustomerId = e.CustomerId.Trim(),
             Status = "Draft",
             TotalAmount = 0m,
-            CreatedAt = domainEvent.OccurredAt,
+            CreatedAt = e.OccurredAt,
             ItemCount = 0,
             LastUpdated = DateTime.UtcNow
         };
@@ -97,48 +91,45 @@ public class OrderProjectionHandler : IProjectionHandler
         var repository = _repositoryFactory.CreateRepository<OrderSummaryReadModel>();
         await repository.UpsertAsync(orderSummary, cancellationToken);
 
-        _logger.LogDebug("Created order summary read model for order {OrderId}", domainEvent.StreamId);
+        _logger.LogDebug("Created order summary read model for order {OrderId}", e.StreamId);
     }
 
-    private async Task HandleOrderItemAddedAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
+    private async Task HandleOrderItemAddedAsync(OrderItemAdded e, CancellationToken cancellationToken)
     {
         var repository = _repositoryFactory.CreateRepository<OrderSummaryReadModel>();
-        var orderSummary = await repository.GetByIdAsync(domainEvent.StreamId, cancellationToken);
+        var orderSummary = await repository.GetByIdAsync(e.StreamId, cancellationToken);
 
         if (orderSummary != null)
         {
-            var unitPrice = decimal.Parse(ExtractProperty(domainEvent, "UnitPrice"));
-            var quantity = int.Parse(ExtractProperty(domainEvent, "Quantity"));
-
-            orderSummary.TotalAmount += unitPrice * quantity;
+            orderSummary.TotalAmount += e.UnitPrice * e.Quantity;
             orderSummary.ItemCount++;
             orderSummary.LastUpdated = DateTime.UtcNow;
 
             await repository.UpsertAsync(orderSummary, cancellationToken);
 
-            _logger.LogDebug("Updated order summary for order {OrderId} - added item", domainEvent.StreamId);
+            _logger.LogDebug("Updated order summary for order {OrderId} - added item", e.StreamId);
         }
     }
 
-    private async Task HandleOrderConfirmedAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
+    private async Task HandleOrderConfirmedAsync(OrderConfirmed e, CancellationToken cancellationToken)
     {
-        await UpdateOrderStatusAsync(domainEvent, "Confirmed", cancellationToken);
+        await UpdateOrderStatusAsync(e.StreamId, "Confirmed", cancellationToken);
     }
 
-    private async Task HandleOrderShippedAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
+    private async Task HandleOrderShippedAsync(OrderShipped e, CancellationToken cancellationToken)
     {
-        await UpdateOrderStatusAsync(domainEvent, "Shipped", cancellationToken);
+        await UpdateOrderStatusAsync(e.StreamId, "Shipped", cancellationToken);
     }
 
-    private async Task HandleOrderCancelledAsync(DomainEvent domainEvent, CancellationToken cancellationToken)
+    private async Task HandleOrderCancelledAsync(OrderCancelled e, CancellationToken cancellationToken)
     {
-        await UpdateOrderStatusAsync(domainEvent, "Cancelled", cancellationToken);
+        await UpdateOrderStatusAsync(e.StreamId, "Cancelled", cancellationToken);
     }
 
-    private async Task UpdateOrderStatusAsync(DomainEvent domainEvent, string status, CancellationToken cancellationToken)
+    private async Task UpdateOrderStatusAsync(string streamId, string status, CancellationToken cancellationToken)
     {
         var repository = _repositoryFactory.CreateRepository<OrderSummaryReadModel>();
-        var orderSummary = await repository.GetByIdAsync(domainEvent.StreamId, cancellationToken);
+        var orderSummary = await repository.GetByIdAsync(streamId, cancellationToken);
 
         if (orderSummary != null)
         {
@@ -147,29 +138,8 @@ public class OrderProjectionHandler : IProjectionHandler
 
             await repository.UpsertAsync(orderSummary, cancellationToken);
 
-            _logger.LogDebug("Updated order {OrderId} status to {Status}", domainEvent.StreamId, status);
+            _logger.LogDebug("Updated order {OrderId} status to {Status}", streamId, status);
         }
-    }
-
-    private static string ExtractRequiredProperty(DomainEvent domainEvent, string propertyName)
-    {
-        var value = ExtractProperty(domainEvent, propertyName);
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            throw new InvalidOperationException(
-                $"Event {domainEvent.GetType().Name} is missing required property '{propertyName}'.");
-        }
-
-        return value.Trim();
-    }
-
-    private static string ExtractProperty(DomainEvent domainEvent, string propertyName)
-    {
-        var properties = domainEvent.GetType().GetProperties();
-        var property = properties.FirstOrDefault(
-            p => string.Equals(p.Name, propertyName, StringComparison.OrdinalIgnoreCase));
-
-        return property?.GetValue(domainEvent)?.ToString() ?? string.Empty;
     }
 }
 

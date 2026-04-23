@@ -21,7 +21,7 @@ public class OrderRepository : EventSourcedRepository<Order>, IOrderRepository
         IOutboxRepository outboxRepository,
         EventStoreDbContext context,
         ILogger<OrderRepository> logger)
-        : base(eventStore, outboxRepository, logger)
+        : base(eventStore, outboxRepository, context, logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }

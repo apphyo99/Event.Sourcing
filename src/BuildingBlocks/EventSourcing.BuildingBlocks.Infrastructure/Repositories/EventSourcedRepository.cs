@@ -3,6 +3,8 @@ using EventSourcing.BuildingBlocks.Application.Outbox;
 using EventSourcing.BuildingBlocks.Domain.Aggregates;
 using EventSourcing.BuildingBlocks.Domain.Events;
 using EventSourcing.BuildingBlocks.Domain.Repositories;
+using EventSourcing.BuildingBlocks.Infrastructure.EventStore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
@@ -16,15 +18,18 @@ public class EventSourcedRepository<T> : IAggregateRepository<T> where T : Aggre
 {
     private readonly IEventStore _eventStore;
     private readonly IOutboxRepository _outboxRepository;
+    private readonly EventStoreDbContext _dbContext;
     private readonly ILogger<EventSourcedRepository<T>> _logger;
 
     public EventSourcedRepository(
         IEventStore eventStore,
         IOutboxRepository outboxRepository,
+        EventStoreDbContext dbContext,
         ILogger<EventSourcedRepository<T>> logger)
     {
         _eventStore = eventStore ?? throw new ArgumentNullException(nameof(eventStore));
         _outboxRepository = outboxRepository ?? throw new ArgumentNullException(nameof(outboxRepository));
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -47,10 +52,7 @@ public class EventSourcedRepository<T> : IAggregateRepository<T> where T : Aggre
         var aggregate = CreateEmptyAggregate();
         var domainEvents = events.Select(DeserializeEvent).ToList();
 
-        foreach (var domainEvent in domainEvents)
-        {
-            aggregate.LoadFromHistory(domainEvent);
-        }
+        aggregate.LoadFromHistory(domainEvents);
 
         _logger.LogDebug(
             "Successfully loaded aggregate {AggregateType} with {EventCount} events from stream {StreamId}",
@@ -84,10 +86,7 @@ public class EventSourcedRepository<T> : IAggregateRepository<T> where T : Aggre
         var aggregate = CreateEmptyAggregate();
         var domainEvents = events.Select(DeserializeEvent).ToList();
 
-        foreach (var domainEvent in domainEvents)
-        {
-            aggregate.LoadFromHistory(domainEvent);
-        }
+        aggregate.LoadFromHistory(domainEvents);
 
         _logger.LogDebug(
             "Successfully loaded aggregate {AggregateType} with {EventCount} events from stream {StreamId} up to version {Version}",
@@ -117,20 +116,28 @@ public class EventSourcedRepository<T> : IAggregateRepository<T> where T : Aggre
 
         try
         {
-            // Append events to the event store
-            await _eventStore.AppendEventsAsync(
-                aggregate.StreamId,
-                aggregate.StreamType,
-                uncommittedEvents,
-                expectedVersion,
-                cancellationToken);
+            // Single transaction: event_store append + outbox insert (see architecture.md — write-side ACID).
+            // Wrapped in execution strategy because Npgsql EnableRetryOnFailure does not support ad-hoc transactions otherwise.
+            var strategy = _dbContext.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                await using var transaction =
+                    await _dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-            // Create outbox messages for event publishing
-            var outboxMessages = uncommittedEvents.Select(CreateOutboxMessage).ToList();
-            await _outboxRepository.AddMessagesAsync(outboxMessages, cancellationToken);
+                await _eventStore.AppendEventsAsync(
+                    aggregate.StreamId,
+                    aggregate.StreamType,
+                    uncommittedEvents,
+                    expectedVersion,
+                    cancellationToken);
 
-            // Mark events as committed
-            aggregate.MarkEventsAsCommitted();
+                var outboxMessages = uncommittedEvents.Select(CreateOutboxMessage).ToList();
+                await _outboxRepository.AddMessagesAsync(outboxMessages, cancellationToken);
+
+                await transaction.CommitAsync(cancellationToken);
+
+                aggregate.MarkEventsAsCommitted();
+            });
 
             _logger.LogInformation(
                 "Successfully saved aggregate {AggregateType} with {EventCount} events to stream {StreamId}",
@@ -163,10 +170,15 @@ public class EventSourcedRepository<T> : IAggregateRepository<T> where T : Aggre
 
     private static DomainEvent DeserializeEvent(Application.EventStore.StoredEvent storedEvent)
     {
-        // In a real implementation, you would need a type registry to map event type names to actual types
-        // For now, this is a simplified version that assumes the event type can be resolved
+        // Type.GetType(string) without an assembly-qualified name does not resolve application types.
         var eventTypeName = $"EventSourcing.Command.Domain.Orders.{storedEvent.EventType}";
-        var eventType = Type.GetType(eventTypeName);
+        Type? eventType = null;
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            eventType = assembly.GetType(eventTypeName, throwOnError: false, ignoreCase: false);
+            if (eventType != null)
+                break;
+        }
 
         if (eventType == null)
         {

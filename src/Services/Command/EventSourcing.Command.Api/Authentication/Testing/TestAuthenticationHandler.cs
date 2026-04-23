@@ -4,33 +4,29 @@ using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
-namespace EventSourcing.Integration.Tests.Api;
+namespace EventSourcing.Command.Api.Authentication.Testing;
 
 /// <summary>
-/// Test authentication scheme options
-/// </summary>
-public class TestAuthenticationSchemeOptions : AuthenticationSchemeOptions
-{
-    public string DefaultUserId { get; set; } = "test-user-id";
-    public string DefaultUserName { get; set; } = "Test User";
-}
-
-/// <summary>
-/// Test authentication handler that bypasses real authentication for testing
+/// Authentication handler that always succeeds with a fixed principal (Environment = Testing only).
 /// </summary>
 public class TestAuthenticationHandler : AuthenticationHandler<TestAuthenticationSchemeOptions>
 {
     public TestAuthenticationHandler(
         IOptionsMonitor<TestAuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder,
-        ISystemClock clock)
-        : base(options, logger, encoder, clock)
+        UrlEncoder encoder)
+        : base(options, logger, encoder)
     {
     }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
+        if (Request.Headers.TryGetValue("X-Test-Auth", out var authBehavior) &&
+            string.Equals(authBehavior.ToString(), "unauthenticated", StringComparison.OrdinalIgnoreCase))
+        {
+            return Task.FromResult(AuthenticateResult.NoResult());
+        }
+
         var claims = new[]
         {
             new Claim(ClaimTypes.Name, Options.DefaultUserName),

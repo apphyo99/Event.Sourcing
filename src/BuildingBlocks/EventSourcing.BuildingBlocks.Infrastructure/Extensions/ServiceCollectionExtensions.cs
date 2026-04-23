@@ -83,7 +83,8 @@ public static class ServiceCollectionExtensions
             {
                 MaxRetryAttemptsOnRateLimitedRequests = 3,
                 MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(30),
-                ConsistencyLevel = ConsistencyLevel.Session
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Gateway
             };
 
             return new CosmosClient(cosmosConfig.EndpointUri, cosmosConfig.PrimaryKey, cosmosClientOptions);

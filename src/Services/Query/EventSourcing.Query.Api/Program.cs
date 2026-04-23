@@ -1,8 +1,12 @@
 using EventSourcing.BuildingBlocks.Application.Extensions;
 using EventSourcing.BuildingBlocks.Infrastructure.Extensions;
 using EventSourcing.Query.Application.Extensions;
+using EventSourcing.Query.Application.Orders.Queries;
 using EventSourcing.Query.Infrastructure.Extensions;
+using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Reflection;
@@ -24,7 +28,9 @@ builder.Host.UseSerilog((context, configuration) =>
 builder.Services.AddControllers();
 
 // Add application building blocks (queries and handlers)
-builder.Services.AddApplicationBuildingBlocks(Assembly.GetExecutingAssembly());
+builder.Services.AddApplicationBuildingBlocks(
+    Assembly.GetExecutingAssembly(),
+    typeof(GetOrderByIdQuery).Assembly);
 
 // Add Cosmos DB for read models
 builder.Services.AddCosmosDbReadModels(builder.Configuration);
@@ -47,11 +53,11 @@ builder.Services.AddAuthorization();
 // Configure API versioning
 builder.Services.AddApiVersioning(options =>
 {
-    options.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+    options.DefaultApiVersion = new ApiVersion(1, 0);
     options.AssumeDefaultVersionWhenUnspecified = true;
-    options.ApiVersionReader = Microsoft.AspNetCore.Mvc.ApiVersionReader.Combine(
-        new Microsoft.AspNetCore.Mvc.QueryStringApiVersionReader("version"),
-        new Microsoft.AspNetCore.Mvc.HeaderApiVersionReader("X-Version"));
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new QueryStringApiVersionReader("version"),
+        new HeaderApiVersionReader("X-Version"));
 });
 
 // Configure Swagger/OpenAPI
@@ -106,7 +112,7 @@ builder.Services.AddSwaggerGen(options =>
 
 // Configure health checks
 builder.Services.AddHealthChecks()
-    .AddCosmosDb(builder.Configuration.GetConnectionString("CosmosDB")!, name: "cosmosdb")
+    .AddAzureCosmosDB(name: "cosmosdb")
     .AddRedis(builder.Configuration.GetConnectionString("Redis")!, name: "redis")
     .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy());
 
@@ -164,7 +170,7 @@ app.MapControllers();
 // Configure health check endpoints
 app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {
-    ResponseWriter = Microsoft.Extensions.Diagnostics.HealthChecks.UIResponseWriter.WriteHealthCheckUIResponse
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
 });
 
 app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions

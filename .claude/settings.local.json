@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find . -type f -name \"*.cs\" -exec grep -l \"CosmosClient\" {})",
+      "Bash(xargs grep:*)",
+      "Bash(find . -type f -name *.cs -path */ReadModels/* -o -name *Repository.cs)",
+      "Bash(docker ps:*)",
+      "Bash(docker compose:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(timeout 10 docker logs eventsourcing-cosmosdb --tail 30)",
+      "Bash(docker inspect:*)",
+      "Bash(powershell -Command \"docker logs eventsourcing-cosmosdb 2>&1 | Select-Object -Last 30\")",
+      "Bash(dir:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(dotnet build:*)"
     ]
   }
 }

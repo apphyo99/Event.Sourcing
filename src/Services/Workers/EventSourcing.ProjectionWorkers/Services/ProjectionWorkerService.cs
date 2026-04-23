@@ -71,11 +71,12 @@ public class ProjectionWorkerService : BackgroundService
             .WaitAndRetryAsync(
                 retryCount: _options.MaxRetryAttempts,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
-                onRetry: (outcome, timespan, retryCount, context) =>
+                onRetry: (exception, timespan, retryCount, context) =>
                 {
                     _logger.LogWarning(
-                        "Retry {RetryCount}/{MaxRetries} for projection processing after {Delay}ms. Exception: {Exception}",
-                        retryCount, _options.MaxRetryAttempts, timespan.TotalMilliseconds, outcome.Exception?.Message);
+                        exception,
+                        "Retry {RetryCount}/{MaxRetries} for projection processing after {Delay}ms.",
+                        retryCount, _options.MaxRetryAttempts, timespan.TotalMilliseconds);
                 });
     }
 
@@ -206,7 +207,6 @@ public class ProjectionWorkerService : BackgroundService
                 return;
             }
 
-            // Process the projection
             await projectionHandler.HandleAsync(domainEvent, cancellationToken);
 
             _logger.LogDebug("Successfully processed projection for event type {EventType}", eventType);
@@ -222,18 +222,14 @@ public class ProjectionWorkerService : BackgroundService
     {
         try
         {
-            // In a real implementation, you would need a type registry to map event type names to actual types
-            // For now, this is a simplified version
-            var eventTypeName = $"EventSourcing.Command.Domain.Orders.{eventType}";
-            var type = Type.GetType(eventTypeName);
-
-            if (type == null)
+            var resolvedType = ResolveOrderDomainEventType(eventType);
+            if (resolvedType == null)
             {
-                _logger.LogWarning("Could not resolve type for event {EventType}", eventType);
+                _logger.LogWarning("Could not resolve CLR type for event name {EventType}", eventType);
                 return null;
             }
 
-            var domainEvent = JsonSerializer.Deserialize(messageBody, type) as DomainEvent;
+            var domainEvent = JsonSerializer.Deserialize(messageBody, resolvedType) as DomainEvent;
             return domainEvent;
         }
         catch (Exception ex)
@@ -243,7 +239,26 @@ public class ProjectionWorkerService : BackgroundService
         }
     }
 
-    private object? GetProjectionHandler(IServiceProvider serviceProvider, string eventType)
+    /// <summary>
+    /// Resolves <c>EventSourcing.Command.Domain.Orders.{eventType}</c> from loaded assemblies (same strategy as event store reload).
+    /// </summary>
+    private static Type? ResolveOrderDomainEventType(string eventType)
+    {
+        if (string.IsNullOrWhiteSpace(eventType))
+            return null;
+
+        var eventTypeName = $"EventSourcing.Command.Domain.Orders.{eventType}";
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            var type = assembly.GetType(eventTypeName, throwOnError: false, ignoreCase: false);
+            if (type != null)
+                return type;
+        }
+
+        return null;
+    }
+
+    private OrderProjectionHandler? GetProjectionHandler(IServiceProvider serviceProvider, string eventType)
     {
         try
         {
